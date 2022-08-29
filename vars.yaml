@@ -1,0 +1,6 @@
+user_config:
+  default_user: opc
+  home_dir: /home/opc
+
+docker_config:
+  docker_compose2_arm64: https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-aarch64

@@ -1,0 +1,75 @@
+- name: Create directory structure
+  file:
+    name: "{{ item }}"
+    state: directory
+    owner: "{{ user_config.default_user }}"
+    group: "{{ user_config.default_user }}"
+  with_items:
+    - "{{user_config.home_dir}}/jenkins"
+
+- name: Place docker-compose.yaml
+  copy:
+    src: ./files/docker-compose.yaml
+    dest: "{{user_config.home_dir}}/wordpress"
+    owner: "{{ user_config.default_user }}"
+    group: "{{ user_config.default_user }}"
+
+- name: Place nginx.conf file
+  copy:
+    src: ./files/nginx.conf
+    dest: "{{user_config.home_dir}}/wordpress/nginx/nginx.conf"
+    owner: "{{ user_config.default_user }}"
+    group: "{{ user_config.default_user }}"
+
+- name: Place ssl.conf file
+  copy:
+    src: ./files/ssl.conf
+    dest: "{{user_config.home_dir}}/wordpress/nginx/conf.d/ssl.conf"
+    owner: "{{ user_config.default_user }}"
+    group: "{{ user_config.default_user }}"
+
+- name: Place cert key
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ user_config.default_user }}"
+    group: "{{ user_config.default_user }}"
+  with_items:
+  - { src: "./files/{{domain_config.ssl_key}}", dest: "{{user_config.home_dir}}/wordpress/nginx/conf.d/ssl/{{domain_config.ssl_key}}" }
+  - { src: "./files/{{domain_config.ssl_crt}}", dest: "{{user_config.home_dir}}/wordpress/nginx/conf.d/ssl/{{domain_config.ssl_crt}}" }
+
+- name: Validate configurations
+  fail: msg="The key {{ item.key }} has the value {{ item.value }}. Please correct it in vars.yaml file."
+  when: item.value == None or item.value == "<value_here>"
+  with_dict: "{{ database_config }}"
+
+- name: Place docker compose configuration values
+  replace:
+    path: "{{user_config.home_dir}}/wordpress/docker-compose.yaml"
+    regexp: "<{{ item.key }}>"
+    replace: "{{ item.value }}"
+  with_dict: "{{ database_config }}"
+
+- name: Put domain name in nginx.conf
+  replace:
+    path: "{{user_config.home_dir}}/wordpress/nginx/nginx.conf"
+    regexp: "<domain_name>"
+    replace: "{{ domain_config.domain_name }}"
+
+- name: Put domain name in ssl.conf
+  replace:
+    path: "{{user_config.home_dir}}/wordpress/nginx/conf.d/ssl.conf"
+    regexp: "<domain_name>"
+    replace: "{{ domain_config.domain_name }}"
+
+- name: Place SSL key file in ssl.conf
+  replace:
+    path: "{{user_config.home_dir}}/wordpress/nginx/conf.d/ssl.conf"
+    regexp: "<ssl_key>"
+    replace: "{{ domain_config.ssl_key }}"
+
+- name: Place SSL cert file in ssl.conf
+  replace:
+    path: "{{user_config.home_dir}}/wordpress/nginx/conf.d/ssl.conf"
+    regexp: "<ssl_crt>"
+    replace: "{{ domain_config.ssl_crt }}"  
